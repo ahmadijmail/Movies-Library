@@ -34,3 +34,16 @@ app.listen(port, '127.0.0.1', () => {
    this.poster_path= poster_path;
    this.overview=overview; 
  } 
+
+
+ app.use(function (error, req, res, text) {
+  res.type('taxt/plain');
+  res.status(500);
+  res.send('Sorry, something went wrong');
+})
+
+app.use(function (req, res, text) {
+  res.status(404);
+  res.type('text/plain');
+  res.send('Not found');
+});
