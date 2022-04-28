@@ -16,6 +16,7 @@ Create a route with a method of get and a path of /. The callback should be usei
 Create a constructor function to ensure your data follow the same format.
 Create a function to handle the server error (status 500)
 Create a function to handle "page not found error" (status 404)
+handling the 3rd party API calls
 
 ## Project Features
 Not that Features at this time, Handeling req, res
