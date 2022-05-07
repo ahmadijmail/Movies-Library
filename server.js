@@ -1,12 +1,18 @@
 `use strict`;
 require(`dotenv`).config();
+const url = "postgres://ahmadijmail:0000@localhost:5432/task13";
 const express = require("express");
 const axios = require("axios").default;
+const bodyParser = require("body-parser");
 const cors = require(`cors`);
 const app = express();
-const port = 3000;
+const port = 3002;
 const movieData = require(`./MovieData/data.json`);
 const apiKey = process.env.APIKEY;
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+const { Client } = require("pg");
+const client = new Client(url);
 app.use(cors());
 
 //routes
@@ -16,9 +22,40 @@ app.get("/trending", handeltrending);
 app.get("/search", handelsearch);
 app.get("/upcoming", handelupcoming);
 app.get("/id", handelSearchId);
-
+app.post("/addMovie", handeladd);
+app.get("/getMovies", handelget);
+app.use(handleError);
 
 //functions
+
+function handeladd(req, res) {
+  const { movieID, movieName, movieLength, type, realsedate } = req.body;
+  let sql = ` INSERT INTO Movies(movieID,movieName,movieLength,type,realsedate) VALUES($1,$2,$3,$4,$5) RETURNING *;`;
+  let values = [movieID, movieName, movieLength, type, realsedate];
+
+  client
+    .query(sql, values)
+    .then((result) => {
+      console.log(result.rows);
+      return res.status(200).json(result.rows);
+    })
+    .catch((err) => {
+      handleError(err, req, res);
+    });
+}
+
+function handelget(req, res) {
+  let sql = `SELECT * from movies`;
+  client
+    .query(sql)
+    .then((result) => {
+      console.log(result);
+      res.send(result.rows);
+    })
+    .catch((err) => {
+      handleError(err, req, res);
+    });
+}
 
 function handeltrending(req, res) {
   const url = `https://api.themoviedb.org/3/trending/all/week?api_key=${apiKey}&language=en-US`;
@@ -38,7 +75,9 @@ function handeltrending(req, res) {
       });
       res.send(trending);
     })
-    .catch();
+    .catch((err) => {
+      handleError(err, req, res);
+    });
 }
 
 function handelsearch(req, res) {
@@ -52,25 +91,23 @@ function handelsearch(req, res) {
       res.json(result.data.results);
     })
 
-    .catch((error) => {
-      console.log(error);
-      res.send("Not found");
+    .catch((err) => {
+      handleError(err, req, res);
     });
 }
 
 function handelupcoming(req, res) {
-    const url = `https://api.themoviedb.org/3/movie/upcoming?api_key=${apiKey}&language=en-US&page=1`;
+  const url = `https://api.themoviedb.org/3/movie/upcoming?api_key=${apiKey}&language=en-US&page=1`;
   axios
     .get(url)
     .then((result) => {
       console.log(result);
       //res.send("searching");
-      res.json(result.data.results)
+      res.json(result.data.results);
     })
 
-    .catch((error) => {
-      console.log(error);
-      res.send("Not found");
+    .catch((err) => {
+      handleError(err, req, res);
     });
 }
 
@@ -83,12 +120,10 @@ function handelSearchId(req, res) {
     .then((result) => {
       res.json(result.data);
     })
-    .catch((error) => {
-      console.log(error);
-      res.send("Not found");
+    .catch((err) => {
+      handleError(err, req, res);
     });
 }
-
 
 function Trending(id, title, release_date, poster_path, overview) {
   this.id = id;
@@ -122,20 +157,12 @@ function Trending(id, title, release_date, poster_path, overview) {
 //   res.send("Welcome to Favorite Page");
 // }
 
-
-
-app.use(function (error, req, res, text) {
-  res.type("taxt/plain");
-  res.status(500);
-  res.send("Sorry, something went wrong");
+client.connect().then(() => {
+  app.listen(port, "127.0.0.1", () => {
+    console.log(`Example app listening on port  ${port}`);
+  });
 });
 
-app.use(function (req, res, text) {
-  res.status(404);
-  res.type("text/plain");
-  res.send("Not found");
-});
-
-app.listen(port, "127.0.0.1", () => {
-  console.log(`Example app listening on port  ${port}`);
-});
+function handleError(error, req, res) {
+  res.status(500).send(error)
+}
