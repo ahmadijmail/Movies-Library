@@ -6,7 +6,7 @@ const axios = require("axios").default;
 const bodyParser = require("body-parser");
 const cors = require(`cors`);
 const app = express();
-const port = 3002;
+const port = 3000;
 const movieData = require(`./MovieData/data.json`);
 const apiKey = process.env.APIKEY;
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -25,8 +25,58 @@ app.get("/id", handelSearchId);
 app.post("/addMovie", handeladd);
 app.get("/getMovies", handelget);
 app.use(handleError);
-
+app.put("/UPDATE/:updateName", handelupdate)
+app.delete("/DELETE", handleDelete);
+app.get("/getMoviebyId", handleGetById);
 //functions
+
+
+function handelupdate (req, res) {
+  const { movieID, movieName, movieLength, type, realsedate } = req.body;
+  const { updateName } = req.params;
+  let sql = ` UPDATE  Movies SET movieID =$1, movieName = $2, movieLength = $3, type = 4$, realsedate = $5 WHERE id = $5 RETURNING *` ;
+  let values = [movieID, movieName, movieLength, type, realsedate, updateName ];
+
+  client
+    .query(sql, values)
+    .then((result) => {
+      console.log(result.rows);
+      return res.status(200).json(result.rows);
+    })
+    .catch((err) => {
+      handleError(err, req, res);
+    });
+
+}
+
+function handleDelete (req, res) {
+  const { movieName } = req.query.id;
+  let sql = 'DELETE FROM movie WHERE id=$1;'
+  let values = [movieName];
+
+  client
+    .query(sql, values)
+    .then((result) => {
+      console.log(result.rows);
+      return res.send("deleted");
+    })
+    .catch((err) => {
+      handleError(err, req, res);
+    });
+
+}
+
+function handleGetById(req, res) {
+
+  const { id } = req.query;
+  let sql = 'SELECT * from Movies WHERE id=$1;'
+  let value = [id];
+  client.query(sql, value).then((result) => {
+    res.json(result.rows);
+  }).catch((err) => {
+    handleError(err, req, res);
+  });
+}
 
 function handeladd(req, res) {
   const { movieID, movieName, movieLength, type, realsedate } = req.body;
